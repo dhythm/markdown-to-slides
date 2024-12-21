@@ -94,7 +94,7 @@ export default function Home() {
             />
             <div className="mt-4 flex items-center justify-center gap-6 text-sm text-foreground">
               <a
-                href="https://github.com/itsmeasadali/markdown-to-slides"
+                href="https://github.com/ztabs-official/markdown-to-slides"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center font-medium hover:text-primary transition-colors"
