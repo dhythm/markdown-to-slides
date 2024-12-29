@@ -72,6 +72,7 @@ export function SlidePreview({
             variant="outline"
             onClick={onPrevSlide}
             disabled={currentSlide === 0}
+            className="mt-2"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Previous
@@ -83,6 +84,7 @@ export function SlidePreview({
             variant="outline"
             onClick={onNextSlide}
             disabled={currentSlide === slides.length - 1}
+            className="mt-2"
           >
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
