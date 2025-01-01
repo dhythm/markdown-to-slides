@@ -1,17 +1,21 @@
 "use client"
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { SessionProvider } from "next-auth/react"
 
-interface ExtendedThemeProviderProps extends ThemeProviderProps {
-  suppressHydrationWarning?: boolean
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function ThemeProvider({ children, suppressHydrationWarning, ...props }: ExtendedThemeProviderProps) {
+export function ThemeProvider({ 
+  children, 
+  ...props 
+}: React.ComponentProps<typeof NextThemesProvider>) {
   return (
-    <NextThemesProvider {...props} enableSystem={true}>
-      {children}
-    </NextThemesProvider>
+    <SessionProvider>
+      <NextThemesProvider 
+        {...props}
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+      </NextThemesProvider>
+    </SessionProvider>
   )
 } 
