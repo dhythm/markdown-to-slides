@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles, Presentation, Languages, Palette, ChevronDown } from "lucide-react"
+import { Sparkles, Code2, Languages, Palette, ChevronDown } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -248,49 +248,36 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Pro Features
+            Pro Features <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onSelect={(e) => {
-            e.preventDefault()
-            handleFeatureClick('generate', setGenerateDialogOpen)
-          }}>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Generate Slides
-            </div>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => handleFeatureClick("enhance", setEnhanceDialogOpen)}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Enhance Slides</span>
           </DropdownMenuItem>
-
-          <DropdownMenuItem onSelect={(e) => {
-            e.preventDefault()
-            handleFeatureClick('enhance', setEnhanceDialogOpen)
-          }}>
-            <div className="flex items-center gap-2">
-              <Presentation className="h-4 w-4" />
-              Enhance Slides
-            </div>
+          <DropdownMenuItem
+            onClick={() => handleFeatureClick("translate", setTranslateDialogOpen)}
+            className="gap-2"
+          >
+            <Languages className="h-4 w-4" />
+            <span>Translate Slides</span>
           </DropdownMenuItem>
-
-          <DropdownMenuItem onSelect={(e) => {
-            e.preventDefault()
-            handleFeatureClick('translate', setTranslateDialogOpen)
-          }}>
-            <div className="flex items-center gap-2">
-              <Languages className="h-4 w-4" />
-              Translate Slides
-            </div>
+          <DropdownMenuItem
+            onClick={() => handleFeatureClick("theme", setThemeDialogOpen)}
+            className="gap-2"
+          >
+            <Palette className="h-4 w-4" />
+            <span>Custom Theme</span>
           </DropdownMenuItem>
-
-          <DropdownMenuItem onSelect={(e) => {
-            e.preventDefault()
-            handleFeatureClick('theme', setThemeDialogOpen)
-          }}>
-            <div className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Theme
-            </div>
+          <DropdownMenuItem
+            className="gap-2 opacity-50 cursor-not-allowed"
+          >
+            <Code2 className="h-4 w-4" />
+            <span>Access to API (coming soon)</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
