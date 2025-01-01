@@ -10,12 +10,12 @@ export function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setErrorMessage(null)
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
@@ -31,13 +31,13 @@ export function SignInForm() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setErrorMessage("Invalid email or password")
       } else {
         router.push(callbackUrl)
         router.refresh()
       }
-    } catch (error) {
-      setError("An error occurred. Please try again.")
+    } catch {
+      setErrorMessage("An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -76,9 +76,9 @@ export function SignInForm() {
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        {error && (
-          <div className="text-sm text-red-500 text-center">
-            {error}
+        {errorMessage && (
+          <div className="text-sm text-destructive text-center">
+            {errorMessage}
           </div>
         )}
         <Button

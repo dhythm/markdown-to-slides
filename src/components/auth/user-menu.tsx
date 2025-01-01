@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,9 +27,11 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           {session.user.image ? (
-            <img
+            <Image
               src={session.user.image}
               alt={session.user.name || "User avatar"}
+              width={32}
+              height={32}
               className="h-8 w-8 rounded-full"
             />
           ) : (
