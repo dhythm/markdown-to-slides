@@ -8,51 +8,55 @@ import { MarkdownEditor } from '@/components/editor/markdown-editor'
 import { SlidePreview } from '@/components/preview/slide-preview'
 import { exportToPDF, exportToPPTX } from '@/lib/utils/exports'
 import { exampleSlides } from '@/lib/constants/example-slides'
+import { SlideTheme } from '@/types/theme'
 
 export function SlideMaker() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [markdown, setMarkdown] = useState(exampleSlides)
+  const [slides, setSlides] = useState<string[]>([])
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const [currentTheme, setCurrentTheme] = useState<SlideTheme>()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const slides = markdown
-    .split(/(?=^#{1,2}\s|^-{3,}$)/m)
-    .map(slide => slide.trim())
-    .filter(slide => slide && !slide.match(/^-{3,}$/))
+  useEffect(() => {
+    const newSlides = markdown
+      .split(/^---$/m)
+      .map(slide => slide.trim())
+      .filter(Boolean)
+    setSlides(newSlides)
+  }, [markdown])
 
-  const handleMarkdownChange = (value: string) => {
+  function handleMarkdownChange(value: string) {
     setMarkdown(value)
   }
 
-  const nextSlide = () => {
-    setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1))
+  function prevSlide() {
+    setCurrentSlide(prev => Math.max(0, prev - 1))
   }
 
-  const prevSlide = () => {
-    setCurrentSlide(prev => Math.max(prev - 1, 0))
+  function nextSlide() {
+    setCurrentSlide(prev => Math.min(slides.length - 1, prev + 1))
   }
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
-    }
+  function toggleFullscreen() {
+    setIsFullscreen(prev => !prev)
   }
 
-  const handleExportPDF = async () => {
-    await exportToPDF(slides, { theme: theme as 'dark' | 'light' })
+  async function handleExportPDF() {
+    await exportToPDF(slides, currentTheme)
   }
 
-  const handleExportPPTX = async () => {
-    await exportToPPTX(slides, { theme: theme as 'dark' | 'light' })
+  async function handleExportPPTX() {
+    await exportToPPTX(slides, currentTheme)
+  }
+
+  function handleThemeChange(theme: SlideTheme) {
+    setCurrentTheme(theme)
   }
 
   if (!mounted) {
@@ -67,8 +71,13 @@ export function SlideMaker() {
             variant="outline"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            suppressHydrationWarning
           >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
           </Button>
           <Button variant="outline" onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" />
@@ -81,13 +90,18 @@ export function SlideMaker() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[600px]">
           <div className="h-full">
-            <MarkdownEditor value={markdown} onChange={handleMarkdownChange} />
+            <MarkdownEditor
+              value={markdown}
+              onChange={handleMarkdownChange}
+              onThemeChange={handleThemeChange}
+            />
           </div>
           <div className="h-full flex flex-col">
             <SlidePreview
               currentSlide={currentSlide}
               slides={slides}
               isFullscreen={isFullscreen}
+              theme={currentTheme}
               onPrevSlide={prevSlide}
               onNextSlide={nextSlide}
               onToggleFullscreen={toggleFullscreen}
