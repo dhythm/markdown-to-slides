@@ -1,231 +1,101 @@
-import { jsPDF } from 'jspdf'
-import pptxgen from 'pptxgenjs'
+import { createElement } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { cn } from '@/lib/utils'
-import 'katex/dist/katex.min.css'
+import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import pptxgen from 'pptxgenjs'
+import { SlideTheme } from '@/types/theme'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
-interface ExportOptions {
-  title?: string
-  author?: string
-  subject?: string
-  keywords?: string
-  theme?: 'dark' | 'light'
+interface MarkdownComponentProps {
+  children: ReactNode
+  href?: string
+  inline?: boolean
+  style?: CSSProperties
 }
 
-// Base styles for both PDF and PPTX
-const baseExportStyles = `
-  @font-face {
-    font-family: "Noto Color Emoji";
-    src: url("https://cdn.jsdelivr.net/npm/@fontsource/noto-color-emoji@4.0.0/files/noto-color-emoji-400.woff2") format("woff2");
-  }
+const MarkdownComponents = (theme?: SlideTheme) => ({
+  h1: ({ children }: MarkdownComponentProps) => createElement('h1', {
+    style: {
+      fontFamily: theme?.fonts.heading,
+      color: theme?.styles.heading,
+      marginBottom: theme?.spacing.headingMargin,
+      background: 'none'
+    },
+    children
+  }),
+  h2: ({ children }: MarkdownComponentProps) => createElement('h2', {
+    style: {
+      fontFamily: theme?.fonts.heading,
+      color: theme?.styles.heading,
+      marginBottom: theme?.spacing.headingMargin,
+      background: 'none'
+    },
+    children
+  }),
+  h3: ({ children }: MarkdownComponentProps) => createElement('h3', {
+    style: {
+      fontFamily: theme?.fonts.heading,
+      color: theme?.styles.heading,
+      marginBottom: theme?.spacing.headingMargin,
+      background: 'none'
+    },
+    children
+  }),
+  p: ({ children }: MarkdownComponentProps) => createElement('p', {
+    style: {
+      fontFamily: theme?.fonts.body,
+      color: theme?.styles.text,
+      marginBottom: theme?.spacing.paragraphMargin,
+      background: 'none'
+    },
+    children
+  }),
+  code: ({ inline, children }: MarkdownComponentProps) => createElement(
+    inline ? 'code' : 'pre',
+    {
+      style: {
+        fontFamily: theme?.fonts.code,
+        color: theme?.styles.code,
+        background: 'none'
+      },
+      children: inline ? children : createElement('code', { style: { background: 'none' } }, children)
+    }
+  ),
+  blockquote: ({ children }: MarkdownComponentProps) => createElement('blockquote', {
+    style: {
+      color: theme?.styles.blockquote,
+      borderLeftColor: theme?.styles.accent,
+      background: 'none'
+    },
+    children
+  }),
+  a: ({ children, href }: MarkdownComponentProps) => createElement('a', {
+    href,
+    style: { color: theme?.styles.link, background: 'none' },
+    children
+  })
+})
 
-  .prose {
-    max-width: none;
-    color: inherit;
-    text-align: center;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  }
-  .prose blockquote {
-    border-left: 8px solid rgba(currentColor, 0.8);
-    padding: 1em 1.5em;
-    margin: 1.5em 0;
-    background: rgba(currentColor, 0.1);
-    border-radius: 0.5em;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  .prose code {
-    background: rgba(currentColor, 0.1);
-    padding: 0.2em 0.4em;
-    border-radius: 0.3em;
-    color: currentColor;
-  }
-  .prose pre {
-    background: rgba(currentColor, 0.1);
-    padding: 1em;
-    border-radius: 0.5em;
-    overflow-x: auto;
-    margin: 1em 0;
-    text-align: left;
-  }
-  .prose pre code {
-    background: transparent;
-    padding: 0;
-  }
-  .prose table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1em 0;
-    color: currentColor;
-  }
-  .prose th, .prose td {
-    border: 1px solid rgba(currentColor, 0.2);
-    padding: 0.5em 1em;
-  }
-  .prose th {
-    background: rgba(currentColor, 0.1);
-    font-weight: 600;
-  }
-  .dark .prose blockquote {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  .dark .prose code {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  .dark .prose pre {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  .dark .prose th {
-    background: rgba(255, 255, 255, 0.1);
-  }
-`
-
-// PDF-specific styles with smaller font sizes
-const pdfStyles = `
-  ${baseExportStyles}
-  .prose h1 {
-    font-size: 2em;
-    font-weight: bold;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-    padding: 0.5em 0;
-  }
-  .prose h2 {
-    font-size: 1.7em;
-    font-weight: 600;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-    padding: 0.3em 0;
-  }
-  .prose h3 {
-    font-size: 1.4em;
-    font-weight: 500;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-  }
-  .prose p {
-    font-size: 1.1em;
-    line-height: 1.6;
-    margin-bottom: 1em;
-    color: currentColor;
-  }
-  .prose ul, .prose ol {
-    padding-left: 2em;
-    margin: 1em 0;
-    color: currentColor;
-    text-align: left;
-  }
-  .prose li {
-    font-size: 1.1em;
-    line-height: 1.6;
-    margin-bottom: 0.5em;
-    color: currentColor;
-  }
-  .prose blockquote p {
-    font-size: 1.1em;
-    font-weight: 500;
-    margin: 0;
-    color: currentColor;
-  }
-  .prose code {
-    font-size: 0.9em;
-  }
-  .prose pre code {
-    font-size: 0.9em;
-  }
-`
-
-// PPTX-specific styles with larger font sizes
-const pptxStyles = `
-  ${baseExportStyles}
-  .prose h1 {
-    font-size: 3.5em;
-    font-weight: bold;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-    padding: 0.5em 0;
-  }
-  .prose h2 {
-    font-size: 2.8em;
-    font-weight: 600;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-    padding: 0.3em 0;
-  }
-  .prose h3 {
-    font-size: 2em;
-    font-weight: 500;
-    margin-bottom: 0.5em;
-    color: currentColor;
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-align: center;
-  }
-  .prose p {
-    font-size: 1.5em;
-    line-height: 1.6;
-    margin-bottom: 1em;
-    color: currentColor;
-  }
-  .prose ul, .prose ol {
-    padding-left: 2em;
-    margin: 1em 0;
-    color: currentColor;
-    text-align: left;
-  }
-  .prose li {
-    font-size: 1.5em;
-    line-height: 1.6;
-    margin-bottom: 0.5em;
-    color: currentColor;
-  }
-  .prose blockquote p {
-    font-size: 1.5em;
-    font-weight: 500;
-    margin: 0;
-    color: currentColor;
-  }
-  .prose code {
-    font-size: 1.2em;
-  }
-  .prose pre code {
-    font-size: 1.2em;
-  }
-`
-
-export async function exportToPDF(slides: string[], options: ExportOptions = {}) {
+export async function exportToPDF(slides: string[], theme?: SlideTheme) {
   const pdf = new jsPDF({
     orientation: 'landscape',
     unit: 'px',
     format: 'a4',
     putOnlyUsedFonts: true,
-    ...options,
   })
 
   const width = pdf.internal.pageSize.getWidth()
@@ -242,22 +112,54 @@ export async function exportToPDF(slides: string[], options: ExportOptions = {})
     container.style.height = `${height}px`
     container.style.position = 'fixed'
     container.style.left = '-9999px'
-    container.style.backgroundColor = options.theme === 'dark' ? '#121212' : '#ffffff'
-    container.style.color = options.theme === 'dark' ? '#ffffff' : '#000000'
+    container.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff')
     container.style.display = 'flex'
     container.style.alignItems = 'center'
     container.style.justifyContent = 'center'
 
-    // Add style element with PDF-specific styles
-    const styleElement = document.createElement('style')
-    styleElement.textContent = pdfStyles
-    container.appendChild(styleElement)
-
     const contentWrapper = document.createElement('div')
     contentWrapper.style.width = '100%'
     contentWrapper.style.maxWidth = '90%'
-    contentWrapper.style.padding = '40px'
-    contentWrapper.className = 'slide-content'
+    contentWrapper.className = 'prose prose-lg max-w-none text-center'
+
+    // Add base styles
+    const styleElement = document.createElement('style')
+    styleElement.textContent = `
+      .prose {
+        color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')};
+        font-family: ${theme?.fonts.body || 'system-ui'};
+        background: none;
+      }
+      .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+        color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+        font-family: ${theme?.fonts.heading || 'system-ui'} !important;
+        margin-bottom: ${theme?.spacing.headingMargin || '1.5rem'};
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        -webkit-text-fill-color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+      }
+      .prose p {
+        color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+        font-family: ${theme?.fonts.body || 'system-ui'} !important;
+        margin-bottom: ${theme?.spacing.paragraphMargin || '1rem'};
+        background: none !important;
+      }
+      .prose code {
+        color: ${theme?.styles.code || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#1a1a1a')} !important;
+        font-family: ${theme?.fonts.code || 'monospace'} !important;
+        background: none !important;
+      }
+      .prose a {
+        color: ${theme?.styles.link || (document.documentElement.classList.contains('dark') ? '#60a5fa' : '#0066cc')} !important;
+        background: none !important;
+      }
+      .prose blockquote {
+        color: ${theme?.styles.blockquote || (document.documentElement.classList.contains('dark') ? '#a1a1aa' : '#666666')} !important;
+        border-left-color: ${theme?.styles.accent || (document.documentElement.classList.contains('dark') ? '#3f3f46' : '#e5e5e5')} !important;
+        background: none !important;
+      }
+    `
+    container.appendChild(styleElement)
 
     // Convert markdown to HTML with math expressions
     const html = renderToStaticMarkup(
@@ -272,11 +174,8 @@ export async function exportToPDF(slides: string[], options: ExportOptions = {})
             output: 'html'
           }]
         ],
-        className: cn(
-          'prose prose-lg dark:prose-invert max-w-none text-center',
-          options.theme === 'dark' ? 'dark' : '',
-          'slide-content'
-        ),
+        className: 'prose prose-lg max-w-none text-center',
+        components: MarkdownComponents(theme)
       }, slides[index])
     )
 
@@ -290,7 +189,7 @@ export async function exportToPDF(slides: string[], options: ExportOptions = {})
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: options.theme === 'dark' ? '#121212' : '#ffffff',
+        backgroundColor: theme?.styles.background || '#ffffff',
         logging: false,
       })
 
@@ -307,48 +206,256 @@ export async function exportToPDF(slides: string[], options: ExportOptions = {})
   pdf.save('slides.pdf')
 }
 
-export async function exportToPPTX(slides: string[], options: ExportOptions = {}) {
+export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonRect?: DOMRect) {
   const pptx = new pptxgen()
-  const { title, author, subject } = options
-
-  if (title) pptx.title = title
-  if (author) pptx.author = author
-  if (subject) pptx.subject = subject
-
-  // Set default layout with optimal dimensions for readability
   pptx.layout = 'LAYOUT_16x9'
-  pptx.defineLayout({
-    name: 'CUSTOM',
-    width: 13.333,
-    height: 7.5,
+
+  // Create dialog element
+  const dialog = document.createElement('div')
+  dialog.style.position = 'fixed'
+  dialog.style.zIndex = '9999'
+  dialog.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#1c1c1c' : '#ffffff')
+  dialog.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
+  dialog.style.borderRadius = '8px'
+  dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+  dialog.style.padding = '16px'
+  dialog.style.width = '320px'
+
+  // Position the dialog near the button
+  if (buttonRect) {
+    dialog.style.left = `${buttonRect.left}px`
+    dialog.style.top = `${buttonRect.bottom + 8}px`
+  } else {
+    dialog.style.left = '50%'
+    dialog.style.top = '50%'
+    dialog.style.transform = 'translate(-50%, -50%)'
+  }
+
+  // Add title
+  const title = document.createElement('h3')
+  title.textContent = 'Export PowerPoint'
+  title.style.margin = '0 0 12px 0'
+  title.style.fontSize = '16px'
+  title.style.fontWeight = '600'
+  title.style.color = theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')
+  dialog.appendChild(title)
+
+  // Create options container
+  const optionsContainer = document.createElement('div')
+  optionsContainer.style.display = 'flex'
+  optionsContainer.style.flexDirection = 'column'
+  optionsContainer.style.gap = '12px'
+
+  // Image-based option
+  const imageOption = document.createElement('button')
+  imageOption.style.display = 'flex'
+  imageOption.style.alignItems = 'center'
+  imageOption.style.padding = '12px'
+  imageOption.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
+  imageOption.style.borderRadius = '6px'
+  imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
+  imageOption.style.cursor = 'pointer'
+  imageOption.style.width = '100%'
+  imageOption.style.textAlign = 'left'
+  imageOption.innerHTML = `
+    <div style="flex: 1;">
+      <div style="font-weight: 500; margin-bottom: 4px; color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')}">Image-based PowerPoint</div>
+      <div style="font-size: 13px; color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#a0a0a0' : '#666666')}">Perfect styling, exactly like preview</div>
+    </div>
+  `
+  imageOption.addEventListener('mouseover', () => {
+    imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#3d3d3d' : '#f0f0f0'
   })
-  pptx.layout = 'CUSTOM'
+  imageOption.addEventListener('mouseout', () => {
+    imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
+  })
+
+  // Editable option
+  const editableOption = document.createElement('button')
+  editableOption.style.display = 'flex'
+  editableOption.style.alignItems = 'center'
+  editableOption.style.padding = '12px'
+  editableOption.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
+  editableOption.style.borderRadius = '6px'
+  editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
+  editableOption.style.cursor = 'pointer'
+  editableOption.style.width = '100%'
+  editableOption.style.textAlign = 'left'
+  editableOption.innerHTML = `
+    <div style="flex: 1;">
+      <div style="font-weight: 500; margin-bottom: 4px; color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')}">Editable PowerPoint</div>
+      <div style="font-size: 13px; color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#a0a0a0' : '#666666')}">Not recommended - formatting will be lost</div>
+    </div>
+  `
+  editableOption.addEventListener('mouseover', () => {
+    editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#3d3d3d' : '#f0f0f0'
+  })
+  editableOption.addEventListener('mouseout', () => {
+    editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
+  })
+
+  optionsContainer.appendChild(imageOption)
+  optionsContainer.appendChild(editableOption)
+  dialog.appendChild(optionsContainer)
+
+  // Add close button
+  const closeButton = document.createElement('button')
+  closeButton.innerHTML = '×'
+  closeButton.style.position = 'absolute'
+  closeButton.style.right = '12px'
+  closeButton.style.top = '12px'
+  closeButton.style.border = 'none'
+  closeButton.style.background = 'none'
+  closeButton.style.fontSize = '20px'
+  closeButton.style.cursor = 'pointer'
+  closeButton.style.color = theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')
+  closeButton.style.padding = '4px'
+  closeButton.style.lineHeight = '1'
+  dialog.appendChild(closeButton)
+
+  document.body.appendChild(dialog)
+
+  const choice = await new Promise<boolean | null>((resolve) => {
+    const cleanup = () => {
+      document.body.removeChild(dialog)
+      document.removeEventListener('click', handleClickOutside)
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!dialog.contains(event.target as Node)) {
+        cleanup()
+        resolve(null)
+      }
+    }
+
+    closeButton.onclick = () => {
+      cleanup()
+      resolve(null)
+    }
+
+    imageOption.onclick = () => {
+      cleanup()
+      resolve(false)
+    }
+
+    editableOption.onclick = () => {
+      cleanup()
+      resolve(true)
+    }
+
+    // Add click outside listener
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside)
+    }, 0)
+  })
+
+  // If user cancelled, return without exporting
+  if (choice === null) return
 
   for (let index = 0; index < slides.length; index++) {
     const pptxSlide = pptx.addSlide()
 
+    if (choice) {
+      // Set slide background color
+      if (theme?.styles?.background) {
+        pptxSlide.background = { color: theme.styles.background }
+      }
+
+      // Convert markdown to HTML first to get proper formatting
+      const container = document.createElement('div')
+      const html = renderToStaticMarkup(
+        createElement(ReactMarkdown, {
+          remarkPlugins: [remarkGfm, remarkMath],
+          rehypePlugins: [
+            [rehypeKatex, {
+              strict: false,
+              trust: true,
+              throwOnError: false,
+              globalGroup: true,
+              output: 'html'
+            }]
+          ],
+          className: 'prose prose-lg max-w-none',
+          components: MarkdownComponents(theme)
+        }, slides[index])
+      )
+      container.innerHTML = html
+
+      // Extract text content with basic formatting preserved
+      const textContent = container.textContent || ''
+
+      // Add text content to slide with better formatting
+      pptxSlide.addText(textContent, {
+        x: '10%',
+        y: '10%',
+        w: '80%',
+        h: '80%',
+        fontSize: 28,
+        fontFace: theme?.fonts.body || 'Arial',
+        color: theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'),
+        valign: 'middle',
+        align: 'center',
+        bullet: { type: 'number' },
+        breakLine: true,
+        isTextBox: true,
+        fit: 'shrink',
+        wrap: true,
+      })
+    } else {
     // Create a temporary container for the slide
     const container = document.createElement('div')
     container.style.width = '1600px'
     container.style.height = '900px'
     container.style.position = 'fixed'
     container.style.left = '-9999px'
-    container.style.backgroundColor = options.theme === 'dark' ? '#121212' : '#ffffff'
-    container.style.color = options.theme === 'dark' ? '#ffffff' : '#000000'
+      container.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff')
     container.style.display = 'flex'
     container.style.alignItems = 'center'
     container.style.justifyContent = 'center'
 
-    // Add style element with PPTX-specific styles
-    const styleElement = document.createElement('style')
-    styleElement.textContent = pptxStyles
-    container.appendChild(styleElement)
-
     const contentWrapper = document.createElement('div')
     contentWrapper.style.width = '100%'
     contentWrapper.style.maxWidth = '80%'
-    contentWrapper.style.padding = '40px'
-    contentWrapper.className = 'slide-content'
+      contentWrapper.className = 'prose prose-2xl max-w-none text-center'
+
+      // Add base styles
+      const styleElement = document.createElement('style')
+      styleElement.textContent = `
+        .prose {
+          color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')};
+          font-family: ${theme?.fonts.body || 'system-ui'};
+          background: none;
+        }
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+          color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+          font-family: ${theme?.fonts.heading || 'system-ui'} !important;
+          margin-bottom: ${theme?.spacing.headingMargin || '1.5rem'};
+          background: none !important;
+          -webkit-background-clip: unset !important;
+          -webkit-text-fill-color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+        }
+        .prose p {
+          color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
+          font-family: ${theme?.fonts.body || 'system-ui'} !important;
+          margin-bottom: ${theme?.spacing.paragraphMargin || '1rem'};
+          background: none !important;
+        }
+        .prose code {
+          color: ${theme?.styles.code || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#1a1a1a')} !important;
+          font-family: ${theme?.fonts.code || 'monospace'} !important;
+          background: none !important;
+        }
+        .prose a {
+          color: ${theme?.styles.link || (document.documentElement.classList.contains('dark') ? '#60a5fa' : '#0066cc')} !important;
+          background: none !important;
+        }
+        .prose blockquote {
+          color: ${theme?.styles.blockquote || (document.documentElement.classList.contains('dark') ? '#a1a1aa' : '#666666')} !important;
+          border-left-color: ${theme?.styles.accent || (document.documentElement.classList.contains('dark') ? '#3f3f46' : '#e5e5e5')} !important;
+          background: none !important;
+        }
+      `
+      container.appendChild(styleElement)
 
     // Convert markdown to HTML with math expressions
     const html = renderToStaticMarkup(
@@ -363,11 +470,8 @@ export async function exportToPPTX(slides: string[], options: ExportOptions = {}
             output: 'html'
           }]
         ],
-        className: cn(
-          'prose prose-2xl dark:prose-invert max-w-none text-center',
-          options.theme === 'dark' ? 'dark' : '',
-          'slide-content'
-        ),
+          className: 'prose prose-2xl max-w-none text-center',
+          components: MarkdownComponents(theme)
       }, slides[index])
     )
 
@@ -381,7 +485,7 @@ export async function exportToPPTX(slides: string[], options: ExportOptions = {}
         scale: 3,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: options.theme === 'dark' ? '#121212' : '#ffffff',
+          backgroundColor: theme?.styles.background || '#ffffff',
         logging: false,
       })
 
@@ -399,6 +503,7 @@ export async function exportToPPTX(slides: string[], options: ExportOptions = {}
     } finally {
       // Clean up
       document.body.removeChild(container)
+      }
     }
   }
 
