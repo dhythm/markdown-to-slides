@@ -1,19 +1,24 @@
-import { serverSchema, clientSchema, type ServerEnv } from "./schema"
+import { z } from "zod"
 
-export const env = {} as ServerEnv
+export const envSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  NEXTAUTH_URL: z.string().url(),
+  NEXTAUTH_SECRET: z.string(),
+  STRIPE_SECRET_KEY: z.string(),
+  STRIPE_WEBHOOK_SECRET: z.string(),
+  STRIPE_PRICE_ID: z.string(),
+  NEXT_PUBLIC_APP_URL: z.string().url(),
+  OPENAI_API_KEY: z.string(),
+})
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv extends ServerEnv {}
+export type Env = z.infer<typeof envSchema>
+
+export function validateEnv(): Env {
+  if (!process.env) {
+    throw new Error("No environment variables found")
   }
-}
 
-export function validateEnv() {
-  if (typeof process === "undefined") {
-    throw new Error("This can only be called on the server side")
-  }
-
-  const parsed = serverSchema.safeParse(process.env)
+  const parsed = envSchema.safeParse(process.env)
 
   if (!parsed.success) {
     console.error(
@@ -23,18 +28,5 @@ export function validateEnv() {
     throw new Error("Invalid environment variables")
   }
 
-  // Only validate client-side env vars in development
-  if (process.env.NODE_ENV !== "production") {
-    const clientParsed = clientSchema.safeParse(process.env)
-
-    if (!clientParsed.success) {
-      console.error(
-        "❌ Invalid public environment variables:",
-        clientParsed.error.flatten().fieldErrors
-      )
-      throw new Error("Invalid public environment variables")
-    }
-  }
-
-  Object.assign(env, parsed.data)
+  return parsed.data
 } 

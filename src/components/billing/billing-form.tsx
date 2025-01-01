@@ -15,13 +15,11 @@ import { Sparkles } from "lucide-react"
 
 interface BillingFormProps {
   subscriptionId?: string | null
-  customerId?: string | null
   currentPeriodEnd?: Date | null
 }
 
 export function BillingForm({
   subscriptionId,
-  customerId,
   currentPeriodEnd,
 }: BillingFormProps) {
   const router = useRouter()
