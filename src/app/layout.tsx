@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "./providers";
+import { Inter } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
-import 'katex/dist/katex.min.css';
-import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeProvider } from "@/app/providers";
 import { SignInButton } from "@/components/auth/sign-in-button";
-import { Toaster } from "sonner";
-import { validateEnv } from "@/lib/env";
+import { UserMenu } from "@/components/auth/user-menu";
 
-// Validate environment variables
-validateEnv();
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Markdown to Slides",
-  description: "Convert your markdown to beautiful slides",
+  description: "Convert markdown to beautiful slides with AI",
 };
 
 export default function RootLayout({
@@ -22,38 +20,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
-      <body suppressHydrationWarning>
+      <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
+          disableTransitionOnChange
         >
-          <div className="min-h-screen bg-background">
-            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex h-14 items-center justify-between">
-                  <div className="flex-1 flex justify-start">
-                    <a className="flex items-center space-x-2" href="/">
-                      <span className="font-bold">Markdown to Slides</span>
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <SignInButton />
-                    <UserMenu />
-                  </div>
-                </div>
+          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4 md:px-6">
+              <Link href="/" className="font-bold">
+                Markdown to Slides
+              </Link>
+              <div className="ml-auto flex items-center space-x-4">
+                <SignInButton />
+                <UserMenu />
               </div>
-            </header>
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <div className="max-w-6xl mx-auto">
-                {children}
-              </div>
-            </main>
-          </div>
-          <Toaster />
+            </div>
+          </header>
+          {children}
         </ThemeProvider>
       </body>
     </html>

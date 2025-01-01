@@ -1,512 +1,97 @@
-import { createElement } from 'react'
-import type { ReactNode, CSSProperties } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import { renderToStaticMarkup } from 'react-dom/server'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import pptxgen from 'pptxgenjs'
-import { SlideTheme } from '@/types/theme'
-import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-
-interface MarkdownComponentProps {
-  children: ReactNode
-  href?: string
-  inline?: boolean
-  style?: CSSProperties
-}
-
-const MarkdownComponents = (theme?: SlideTheme) => ({
-  h1: ({ children }: MarkdownComponentProps) => createElement('h1', {
-    style: {
-      fontFamily: theme?.fonts.heading,
-      color: theme?.styles.heading,
-      marginBottom: theme?.spacing.headingMargin,
-      background: 'none'
-    },
-    children
-  }),
-  h2: ({ children }: MarkdownComponentProps) => createElement('h2', {
-    style: {
-      fontFamily: theme?.fonts.heading,
-      color: theme?.styles.heading,
-      marginBottom: theme?.spacing.headingMargin,
-      background: 'none'
-    },
-    children
-  }),
-  h3: ({ children }: MarkdownComponentProps) => createElement('h3', {
-    style: {
-      fontFamily: theme?.fonts.heading,
-      color: theme?.styles.heading,
-      marginBottom: theme?.spacing.headingMargin,
-      background: 'none'
-    },
-    children
-  }),
-  p: ({ children }: MarkdownComponentProps) => createElement('p', {
-    style: {
-      fontFamily: theme?.fonts.body,
-      color: theme?.styles.text,
-      marginBottom: theme?.spacing.paragraphMargin,
-      background: 'none'
-    },
-    children
-  }),
-  code: ({ inline, children }: MarkdownComponentProps) => createElement(
-    inline ? 'code' : 'pre',
-    {
-      style: {
-        fontFamily: theme?.fonts.code,
-        color: theme?.styles.code,
-        background: 'none'
-      },
-      children: inline ? children : createElement('code', { style: { background: 'none' } }, children)
-    }
-  ),
-  blockquote: ({ children }: MarkdownComponentProps) => createElement('blockquote', {
-    style: {
-      color: theme?.styles.blockquote,
-      borderLeftColor: theme?.styles.accent,
-      background: 'none'
-    },
-    children
-  }),
-  a: ({ children, href }: MarkdownComponentProps) => createElement('a', {
-    href,
-    style: { color: theme?.styles.link, background: 'none' },
-    children
-  })
-})
+import html2canvas from "html2canvas"
+import pptxgen from "pptxgenjs"
+import jsPDF from "jspdf"
+import { SlideTheme } from "@/types/theme"
 
 export async function exportToPDF(slides: string[], theme?: SlideTheme) {
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'px',
-    format: 'a4',
-    putOnlyUsedFonts: true,
-  })
+  // Create a temporary container
+  const container = document.createElement("div")
+  container.style.position = "absolute"
+  container.style.left = "-9999px"
+  container.style.top = "-9999px"
+  document.body.appendChild(container)
 
-  const width = pdf.internal.pageSize.getWidth()
-  const height = pdf.internal.pageSize.getHeight()
+  try {
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "px",
+      format: [1280, 720],
+    })
 
-  for (let index = 0; index < slides.length; index++) {
-    if (index > 0) {
-      pdf.addPage()
-    }
-
-    // Create a temporary container for the slide
-    const container = document.createElement('div')
-    container.style.width = `${width}px`
-    container.style.height = `${height}px`
-    container.style.position = 'fixed'
-    container.style.left = '-9999px'
-    container.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff')
-    container.style.display = 'flex'
-    container.style.alignItems = 'center'
-    container.style.justifyContent = 'center'
-
-    const contentWrapper = document.createElement('div')
-    contentWrapper.style.width = '100%'
-    contentWrapper.style.maxWidth = '90%'
-    contentWrapper.className = 'prose prose-lg max-w-none text-center'
-
-    // Add base styles
-    const styleElement = document.createElement('style')
-    styleElement.textContent = `
-      .prose {
-        color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')};
-        font-family: ${theme?.fonts.body || 'system-ui'};
-        background: none;
+    for (let i = 0; i < slides.length; i++) {
+      // Create slide element
+      const slideElement = document.createElement("div")
+      slideElement.innerHTML = slides[i]
+      slideElement.className = "slide-preview"
+      if (theme) {
+        Object.assign(slideElement.style, theme.styles)
       }
-      .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-        color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-        font-family: ${theme?.fonts.heading || 'system-ui'} !important;
-        margin-bottom: ${theme?.spacing.headingMargin || '1.5rem'};
-        background: none !important;
-        -webkit-background-clip: unset !important;
-        -webkit-text-fill-color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-      }
-      .prose p {
-        color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-        font-family: ${theme?.fonts.body || 'system-ui'} !important;
-        margin-bottom: ${theme?.spacing.paragraphMargin || '1rem'};
-        background: none !important;
-      }
-      .prose code {
-        color: ${theme?.styles.code || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#1a1a1a')} !important;
-        font-family: ${theme?.fonts.code || 'monospace'} !important;
-        background: none !important;
-      }
-      .prose a {
-        color: ${theme?.styles.link || (document.documentElement.classList.contains('dark') ? '#60a5fa' : '#0066cc')} !important;
-        background: none !important;
-      }
-      .prose blockquote {
-        color: ${theme?.styles.blockquote || (document.documentElement.classList.contains('dark') ? '#a1a1aa' : '#666666')} !important;
-        border-left-color: ${theme?.styles.accent || (document.documentElement.classList.contains('dark') ? '#3f3f46' : '#e5e5e5')} !important;
-        background: none !important;
-      }
-    `
-    container.appendChild(styleElement)
+      container.appendChild(slideElement)
 
-    // Convert markdown to HTML with math expressions
-    const html = renderToStaticMarkup(
-      createElement(ReactMarkdown, {
-        remarkPlugins: [remarkGfm, remarkMath],
-        rehypePlugins: [
-          [rehypeKatex, {
-            strict: false,
-            trust: true,
-            throwOnError: false,
-            globalGroup: true,
-            output: 'html'
-          }]
-        ],
-        className: 'prose prose-lg max-w-none text-center',
-        components: MarkdownComponents(theme)
-      }, slides[index])
-    )
-
-    contentWrapper.innerHTML = html
-    container.appendChild(contentWrapper)
-    document.body.appendChild(container)
-
-    try {
-      // Render the slide to canvas
-      const canvas = await html2canvas(container, {
+      // Capture slide as canvas
+      const canvas = await html2canvas(slideElement, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: theme?.styles.background || '#ffffff',
         logging: false,
       })
 
-      // Add the canvas content to PDF
-      const imgData = canvas.toDataURL('image/png')
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height)
-    } finally {
-      // Clean up
-      document.body.removeChild(container)
-    }
-  }
+      // Add to PDF
+      const imgData = canvas.toDataURL("image/png")
+      if (i > 0) {
+        pdf.addPage()
+      }
+      pdf.addImage(imgData, "PNG", 0, 0, 1280, 720)
 
-  // Save the PDF
-  pdf.save('slides.pdf')
+      // Clean up
+      container.removeChild(slideElement)
+    }
+
+    pdf.save("presentation.pdf")
+  } finally {
+    document.body.removeChild(container)
+  }
 }
 
-export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonRect?: DOMRect) {
-  const pptx = new pptxgen()
-  pptx.layout = 'LAYOUT_16x9'
+export async function exportToPPTX(slides: string[], theme?: SlideTheme) {
+  // Create a temporary container
+  const container = document.createElement("div")
+  container.style.position = "absolute"
+  container.style.left = "-9999px"
+  container.style.top = "-9999px"
+  document.body.appendChild(container)
 
-  // Create dialog element
-  const dialog = document.createElement('div')
-  dialog.style.position = 'fixed'
-  dialog.style.zIndex = '9999'
-  dialog.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#1c1c1c' : '#ffffff')
-  dialog.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
-  dialog.style.borderRadius = '8px'
-  dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-  dialog.style.padding = '16px'
-  dialog.style.width = '320px'
+  try {
+    const pptx = new pptxgen()
+    pptx.layout = "LAYOUT_16x9"
 
-  // Position the dialog near the button
-  if (buttonRect) {
-    dialog.style.left = `${buttonRect.left}px`
-    dialog.style.top = `${buttonRect.bottom + 8}px`
-  } else {
-    dialog.style.left = '50%'
-    dialog.style.top = '50%'
-    dialog.style.transform = 'translate(-50%, -50%)'
-  }
-
-  // Add title
-  const title = document.createElement('h3')
-  title.textContent = 'Export PowerPoint'
-  title.style.margin = '0 0 12px 0'
-  title.style.fontSize = '16px'
-  title.style.fontWeight = '600'
-  title.style.color = theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')
-  dialog.appendChild(title)
-
-  // Create options container
-  const optionsContainer = document.createElement('div')
-  optionsContainer.style.display = 'flex'
-  optionsContainer.style.flexDirection = 'column'
-  optionsContainer.style.gap = '12px'
-
-  // Image-based option
-  const imageOption = document.createElement('button')
-  imageOption.style.display = 'flex'
-  imageOption.style.alignItems = 'center'
-  imageOption.style.padding = '12px'
-  imageOption.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
-  imageOption.style.borderRadius = '6px'
-  imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
-  imageOption.style.cursor = 'pointer'
-  imageOption.style.width = '100%'
-  imageOption.style.textAlign = 'left'
-  imageOption.innerHTML = `
-    <div style="flex: 1;">
-      <div style="font-weight: 500; margin-bottom: 4px; color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')}">Image-based PowerPoint</div>
-      <div style="font-size: 13px; color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#a0a0a0' : '#666666')}">Perfect styling, exactly like preview</div>
-    </div>
-  `
-  imageOption.addEventListener('mouseover', () => {
-    imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#3d3d3d' : '#f0f0f0'
-  })
-  imageOption.addEventListener('mouseout', () => {
-    imageOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
-  })
-
-  // Editable option
-  const editableOption = document.createElement('button')
-  editableOption.style.display = 'flex'
-  editableOption.style.alignItems = 'center'
-  editableOption.style.padding = '12px'
-  editableOption.style.border = `1px solid ${document.documentElement.classList.contains('dark') ? '#333333' : '#e5e5e5'}`
-  editableOption.style.borderRadius = '6px'
-  editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
-  editableOption.style.cursor = 'pointer'
-  editableOption.style.width = '100%'
-  editableOption.style.textAlign = 'left'
-  editableOption.innerHTML = `
-    <div style="flex: 1;">
-      <div style="font-weight: 500; margin-bottom: 4px; color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')}">Editable PowerPoint</div>
-      <div style="font-size: 13px; color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#a0a0a0' : '#666666')}">Not recommended - formatting will be lost</div>
-    </div>
-  `
-  editableOption.addEventListener('mouseover', () => {
-    editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#3d3d3d' : '#f0f0f0'
-  })
-  editableOption.addEventListener('mouseout', () => {
-    editableOption.style.backgroundColor = document.documentElement.classList.contains('dark') ? '#2d2d2d' : '#f9f9f9'
-  })
-
-  optionsContainer.appendChild(imageOption)
-  optionsContainer.appendChild(editableOption)
-  dialog.appendChild(optionsContainer)
-
-  // Add close button
-  const closeButton = document.createElement('button')
-  closeButton.innerHTML = '×'
-  closeButton.style.position = 'absolute'
-  closeButton.style.right = '12px'
-  closeButton.style.top = '12px'
-  closeButton.style.border = 'none'
-  closeButton.style.background = 'none'
-  closeButton.style.fontSize = '20px'
-  closeButton.style.cursor = 'pointer'
-  closeButton.style.color = theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')
-  closeButton.style.padding = '4px'
-  closeButton.style.lineHeight = '1'
-  dialog.appendChild(closeButton)
-
-  document.body.appendChild(dialog)
-
-  const choice = await new Promise<boolean | null>((resolve) => {
-    const cleanup = () => {
-      document.body.removeChild(dialog)
-      document.removeEventListener('click', handleClickOutside)
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!dialog.contains(event.target as Node)) {
-        cleanup()
-        resolve(null)
+    for (const slide of slides) {
+      // Create slide element
+      const slideElement = document.createElement("div")
+      slideElement.innerHTML = slide
+      slideElement.className = "slide-preview"
+      if (theme) {
+        Object.assign(slideElement.style, theme.styles)
       }
-    }
+      container.appendChild(slideElement)
 
-    closeButton.onclick = () => {
-      cleanup()
-      resolve(null)
-    }
-
-    imageOption.onclick = () => {
-      cleanup()
-      resolve(false)
-    }
-
-    editableOption.onclick = () => {
-      cleanup()
-      resolve(true)
-    }
-
-    // Add click outside listener
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside)
-    }, 0)
-  })
-
-  // If user cancelled, return without exporting
-  if (choice === null) return
-
-  for (let index = 0; index < slides.length; index++) {
-    const pptxSlide = pptx.addSlide()
-
-    if (choice) {
-      // Set slide background color
-      if (theme?.styles?.background) {
-        pptxSlide.background = { color: theme.styles.background }
-      }
-
-      // Convert markdown to HTML first to get proper formatting
-      const container = document.createElement('div')
-      const html = renderToStaticMarkup(
-        createElement(ReactMarkdown, {
-          remarkPlugins: [remarkGfm, remarkMath],
-          rehypePlugins: [
-            [rehypeKatex, {
-              strict: false,
-              trust: true,
-              throwOnError: false,
-              globalGroup: true,
-              output: 'html'
-            }]
-          ],
-          className: 'prose prose-lg max-w-none',
-          components: MarkdownComponents(theme)
-        }, slides[index])
-      )
-      container.innerHTML = html
-
-      // Extract text content with basic formatting preserved
-      const textContent = container.textContent || ''
-
-      // Add text content to slide with better formatting
-      pptxSlide.addText(textContent, {
-        x: '10%',
-        y: '10%',
-        w: '80%',
-        h: '80%',
-        fontSize: 28,
-        fontFace: theme?.fonts.body || 'Arial',
-        color: theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'),
-        valign: 'middle',
-        align: 'center',
-        bullet: { type: 'number' },
-        breakLine: true,
-        isTextBox: true,
-        fit: 'shrink',
-        wrap: true,
-      })
-    } else {
-    // Create a temporary container for the slide
-    const container = document.createElement('div')
-    container.style.width = '1600px'
-    container.style.height = '900px'
-    container.style.position = 'fixed'
-    container.style.left = '-9999px'
-      container.style.backgroundColor = theme?.styles.background || (document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff')
-    container.style.display = 'flex'
-    container.style.alignItems = 'center'
-    container.style.justifyContent = 'center'
-
-    const contentWrapper = document.createElement('div')
-    contentWrapper.style.width = '100%'
-    contentWrapper.style.maxWidth = '80%'
-      contentWrapper.className = 'prose prose-2xl max-w-none text-center'
-
-      // Add base styles
-      const styleElement = document.createElement('style')
-      styleElement.textContent = `
-        .prose {
-          color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')};
-          font-family: ${theme?.fonts.body || 'system-ui'};
-          background: none;
-        }
-        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-          color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-          font-family: ${theme?.fonts.heading || 'system-ui'} !important;
-          margin-bottom: ${theme?.spacing.headingMargin || '1.5rem'};
-          background: none !important;
-          -webkit-background-clip: unset !important;
-          -webkit-text-fill-color: ${theme?.styles.heading || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-        }
-        .prose p {
-          color: ${theme?.styles.text || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000')} !important;
-          font-family: ${theme?.fonts.body || 'system-ui'} !important;
-          margin-bottom: ${theme?.spacing.paragraphMargin || '1rem'};
-          background: none !important;
-        }
-        .prose code {
-          color: ${theme?.styles.code || (document.documentElement.classList.contains('dark') ? '#ffffff' : '#1a1a1a')} !important;
-          font-family: ${theme?.fonts.code || 'monospace'} !important;
-          background: none !important;
-        }
-        .prose a {
-          color: ${theme?.styles.link || (document.documentElement.classList.contains('dark') ? '#60a5fa' : '#0066cc')} !important;
-          background: none !important;
-        }
-        .prose blockquote {
-          color: ${theme?.styles.blockquote || (document.documentElement.classList.contains('dark') ? '#a1a1aa' : '#666666')} !important;
-          border-left-color: ${theme?.styles.accent || (document.documentElement.classList.contains('dark') ? '#3f3f46' : '#e5e5e5')} !important;
-          background: none !important;
-        }
-      `
-      container.appendChild(styleElement)
-
-    // Convert markdown to HTML with math expressions
-    const html = renderToStaticMarkup(
-      createElement(ReactMarkdown, {
-        remarkPlugins: [remarkGfm, remarkMath],
-        rehypePlugins: [
-          [rehypeKatex, {
-            strict: false,
-            trust: true,
-            throwOnError: false,
-            globalGroup: true,
-            output: 'html'
-          }]
-        ],
-          className: 'prose prose-2xl max-w-none text-center',
-          components: MarkdownComponents(theme)
-      }, slides[index])
-    )
-
-    contentWrapper.innerHTML = html
-    container.appendChild(contentWrapper)
-    document.body.appendChild(container)
-
-    try {
-      // Render the slide to canvas with higher scale for better quality
-      const canvas = await html2canvas(container, {
-        scale: 3,
+      // Capture slide as canvas
+      const canvas = await html2canvas(slideElement, {
+        scale: 2,
         useCORS: true,
-        allowTaint: true,
-          backgroundColor: theme?.styles.background || '#ffffff',
         logging: false,
       })
 
-      // Convert canvas to base64 image
-      const imgData = canvas.toDataURL('image/png', 1.0)
+      // Add to PPTX
+      const pptxSlide = pptx.addSlide()
+      const imgData = canvas.toDataURL("image/png")
+      pptxSlide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" })
 
-      // Add the image to the slide
-      pptxSlide.addImage({
-        data: imgData,
-        x: 0,
-        y: 0,
-        w: '100%',
-        h: '100%',
-      })
-    } finally {
       // Clean up
-      document.body.removeChild(container)
-      }
+      container.removeChild(slideElement)
     }
-  }
 
-  // Save the PPTX
-  await pptx.writeFile({ fileName: 'slides.pptx' })
+    pptx.writeFile({ fileName: "presentation.pptx" })
+  } finally {
+    document.body.removeChild(container)
+  }
 } 

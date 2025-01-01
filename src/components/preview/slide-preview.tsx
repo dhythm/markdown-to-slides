@@ -28,22 +28,7 @@ export function SlidePreview({
   onNextSlide,
   onToggleFullscreen,
 }: SlidePreviewProps) {
-  const slideStyle = theme ? {
-    '--background': theme.styles.background,
-    '--text': theme.styles.text,
-    '--heading': theme.styles.heading,
-    '--code': theme.styles.code,
-    '--accent': theme.styles.accent,
-    '--link': theme.styles.link,
-    '--blockquote': theme.styles.blockquote,
-    '--heading-font': theme.fonts.heading,
-    '--body-font': theme.fonts.body,
-    '--code-font': theme.fonts.code,
-    '--padding': theme.spacing.padding,
-    '--heading-margin': theme.spacing.headingMargin,
-    '--paragraph-margin': theme.spacing.paragraphMargin,
-    '--list-margin': theme.spacing.listMargin,
-  } as React.CSSProperties : {}
+  const currentSlideContent = slides[currentSlide] || ""
 
   return (
     <Card className={cn(
@@ -99,59 +84,29 @@ export function SlidePreview({
                 rehypePlugins={[rehypeKatex]}
                 components={{
                   h1: ({ children }) => (
-                    <h1 style={{ 
-                      fontFamily: theme?.fonts.heading,
-                      color: theme?.styles.heading,
-                      marginBottom: theme?.spacing.headingMargin 
-                    }}>{children}</h1>
+                    <h1 style={{ fontFamily: theme?.fonts.heading }}>{children}</h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 style={{ 
-                      fontFamily: theme?.fonts.heading,
-                      color: theme?.styles.heading,
-                      marginBottom: theme?.spacing.headingMargin 
-                    }}>{children}</h2>
+                    <h2 style={{ fontFamily: theme?.fonts.heading }}>{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 style={{ 
-                      fontFamily: theme?.fonts.heading,
-                      color: theme?.styles.heading,
-                      marginBottom: theme?.spacing.headingMargin 
-                    }}>{children}</h3>
+                    <h3 style={{ fontFamily: theme?.fonts.heading }}>{children}</h3>
                   ),
                   p: ({ children }) => (
-                    <p style={{ 
-                      fontFamily: theme?.fonts.body,
-                      color: theme?.styles.text,
-                      marginBottom: theme?.spacing.paragraphMargin 
-                    }}>{children}</p>
+                    <p style={{ fontFamily: theme?.fonts.body }}>{children}</p>
                   ),
                   code: ({ inline, children }) => (
-                    inline ? 
-                      <code style={{ 
-                        fontFamily: theme?.fonts.code,
-                        color: theme?.styles.code 
-                      }}>{children}</code> :
-                      <pre style={{ 
-                        fontFamily: theme?.fonts.code,
-                        color: theme?.styles.code 
-                      }}><code>{children}</code></pre>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote style={{ 
-                      color: theme?.styles.blockquote,
-                      borderLeftColor: theme?.styles.accent 
-                    }}>{children}</blockquote>
-                  ),
-                  a: ({ children, href }) => (
-                    <a 
-                      href={href}
-                      style={{ color: theme?.styles.link }}
-                    >{children}</a>
+                    inline ? (
+                      <code style={{ fontFamily: theme?.fonts.code }}>{children}</code>
+                    ) : (
+                      <pre>
+                        <code style={{ fontFamily: theme?.fonts.code }}>{children}</code>
+                      </pre>
+                    )
                   ),
                 }}
               >
-                {slides[currentSlide] || ''}
+                {currentSlideContent}
               </ReactMarkdown>
             </div>
           </div>
