@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles, Code2, Languages, Palette, ChevronDown } from "lucide-react"
+import { Sparkles, Code2, Languages, Palette, ChevronDown, Loader2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -114,33 +114,35 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
     await action()
   }
 
-  async function generateMarkdown() {
+  async function generateSlides() {
     if (!prompt || !topic) return
-    await handleProAction(async () => {
-      setLoading(true)
-      try {
-        const response = await fetch("/api/ai/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ prompt, topic }),
-        })
 
-        if (!response.ok) {
-          throw new Error("Failed to generate markdown")
-        }
+    setLoading(true)
+    try {
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          topic,
+        }),
+      })
 
-        const data = await response.json()
-        onMarkdownGenerated(data.markdown)
-        setGenerateDialogOpen(false)
-      } catch (error) {
-        console.error("Error generating markdown:", error)
-        toast.error("Failed to generate markdown")
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        throw new Error("Failed to generate slides")
       }
-    })
+
+      const data = await response.json()
+      onMarkdownGenerated(data.markdown)
+      setGenerateDialogOpen(false)
+    } catch (error) {
+      console.error("Error generating slides:", error)
+      toast.error("Failed to generate slides")
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function enhanceSlides() {
@@ -227,6 +229,25 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
 
   return (
     <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleFeatureClick("generate", setGenerateDialogOpen)}
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Generating...
+          </>
+        ) : (
+          <>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate with AI
+          </>
+        )}
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
@@ -292,7 +313,7 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
           </div>
           <DialogFooter>
             <Button
-              onClick={generateMarkdown}
+              onClick={generateSlides}
               disabled={loading || !prompt || !topic}
             >
               {loading ? "Generating..." : "Generate"}
