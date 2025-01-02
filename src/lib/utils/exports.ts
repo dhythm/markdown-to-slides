@@ -439,44 +439,56 @@ export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonR
       const allElements = Array.from(doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre'))
       let currentY = 5 // Start from top
 
+      // Function to calculate text height based on content
+      const calculateTextHeight = (text: string, fontSize: number) => {
+        const charsPerLine = 90 // Approximate characters per line
+        const linesOfText = Math.ceil(text.length / charsPerLine)
+        return Math.max(linesOfText * (fontSize / 44) * 8, 8) // Minimum 8% height
+      }
+
       allElements.forEach((el) => {
         const text = cleanMathText(el.textContent || '')
         if (!text.trim()) return
 
         const tag = el.tagName.toLowerCase()
         
-        // Handle different element types
         switch(tag) {
           case 'h1':
             pptxSlide.addText(text, {
               y: `${currentY}%`,
-              x: '10%',
-              w: '80%',
-              h: '15%',
+              x: '5%',
+              w: '90%',
+              h: '12%',
               fontSize: 44,
               fontFace: theme?.fonts.heading || 'Arial',
               color: getThemeColor(theme?.styles.heading),
               bold: true,
               align: 'center',
               valign: 'middle',
-              fit: 'shrink'
+              margin: [5, 0, 5, 0],
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true
             })
-            currentY += 15
+            currentY += 14
             break
 
           case 'h2':
             pptxSlide.addText(text, {
               y: `${currentY}%`,
-              x: '10%',
-              w: '80%',
-              h: '12%',
+              x: '5%',
+              w: '90%',
+              h: '10%',
               fontSize: 36,
               fontFace: theme?.fonts.heading || 'Arial',
               color: getThemeColor(theme?.styles.heading),
               bold: true,
               align: 'center',
               valign: 'middle',
-              fit: 'shrink'
+              margin: [5, 0, 5, 0],
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true
             })
             currentY += 12
             break
@@ -487,16 +499,19 @@ export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonR
           case 'h6':
             pptxSlide.addText(text, {
               y: `${currentY}%`,
-              x: '10%',
-              w: '80%',
-              h: '10%',
+              x: '5%',
+              w: '90%',
+              h: '8%',
               fontSize: 28,
               fontFace: theme?.fonts.heading || 'Arial',
               color: getThemeColor(theme?.styles.heading),
               bold: true,
               align: 'center',
               valign: 'middle',
-              fit: 'shrink'
+              margin: [5, 0, 5, 0],
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true
             })
             currentY += 10
             break
@@ -508,89 +523,103 @@ export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonR
               .filter((item): item is string => item !== undefined)
             
             if (items.length > 0) {
-              const listHeight = Math.max(items.length * 7, 10)
-              const textOptions = items.map(item => ({
-                text: item,
-                options: {
-                  bullet: true,
-                  paraSpaceBefore: 5,
-                  fontSize: 24,
-                  fontFace: theme?.fonts.body || 'Arial',
-                  color: getThemeColor(theme?.styles.text),
-                  breakLine: true
-                }
-              }))
-
-              pptxSlide.addText(textOptions, {
+              const listHeight = Math.max(items.length * 8, 10)
+              const formattedItems = items.map(item => item.replace(/\$(.*?)\$/g, '($1)'))
+              
+              pptxSlide.addText(formattedItems.join('\\n'), {
                 y: `${currentY}%`,
-                x: '15%',
-                w: '70%',
+                x: '10%',
+                w: '80%',
                 h: `${listHeight}%`,
+                fontSize: 24,
+                fontFace: theme?.fonts.body || 'Arial',
+                color: getThemeColor(theme?.styles.text),
+                bullet: { type: tag === 'ol' ? 'number' : 'bullet' },
                 align: 'left',
-                valign: 'middle',
-                lineSpacing: 1.2
+                valign: 'top',
+                margin: [0, 0, 0, 20],
+                paraSpaceBefore: 5,
+                paraSpaceAfter: 5,
+                breakLine: true,
+                isTextBox: true,
+                lineSpacing: 150
               })
-              currentY += listHeight
+              currentY += listHeight + 4
             }
             break
 
           case 'blockquote':
+            const quoteHeight = calculateTextHeight(text, 24)
             pptxSlide.addText(text, {
               y: `${currentY}%`,
               x: '15%',
               w: '70%',
-              h: '10%',
+              h: `${quoteHeight}%`,
               fontSize: 24,
               fontFace: theme?.fonts.body || 'Arial',
               color: getThemeColor(theme?.styles.blockquote),
               italic: true,
               align: 'left',
               valign: 'middle',
-              indentLevel: 1,
-              fit: 'shrink'
+              margin: [5, 0, 5, 40],
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true,
+              lineSpacing: 150
             })
-            currentY += 10
+            currentY += quoteHeight + 4
             break
 
           case 'pre':
+            const codeHeight = calculateTextHeight(text, 20)
             pptxSlide.addText(text, {
               y: `${currentY}%`,
-              x: '15%',
-              w: '70%',
-              h: '15%',
+              x: '10%',
+              w: '80%',
+              h: `${codeHeight}%`,
               fontSize: 20,
               fontFace: theme?.fonts.code || 'Consolas',
               color: getThemeColor(theme?.styles.code),
               align: 'left',
               valign: 'middle',
-              wrap: true,
-              fit: 'shrink',
+              margin: [10, 10, 10, 10],
               paraSpaceBefore: 5,
-              paraSpaceAfter: 5
+              paraSpaceAfter: 5,
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true,
+              lineSpacing: 150
             })
-            currentY += 15
+            currentY += codeHeight + 4
             break
 
           default: // paragraphs and other elements
-            pptxSlide.addText(text, {
+            // Handle math expressions by wrapping them in parentheses
+            const processedText = text.replace(/\$(.*?)\$/g, '($1)')
+            const paraHeight = calculateTextHeight(processedText, 24)
+            
+            pptxSlide.addText(processedText, {
               y: `${currentY}%`,
-              x: '10%',
-              w: '80%',
-              h: '8%',
+              x: '5%',
+              w: '90%',
+              h: `${paraHeight}%`,
               fontSize: 24,
               fontFace: theme?.fonts.body || 'Arial',
               color: getThemeColor(theme?.styles.text),
               align: 'left',
               valign: 'middle',
-              wrap: true,
-              fit: 'shrink',
+              margin: [5, 0, 5, 0],
               paraSpaceBefore: 2,
-              paraSpaceAfter: 2
+              paraSpaceAfter: 2,
+              isTextBox: true,
+              autoFit: true,
+              breakLine: true,
+              lineSpacing: 150
             })
-            currentY += 8
+            currentY += paraHeight + 2
         }
 
-        // Add some spacing between elements
+        // Add spacing between elements
         currentY += 2
       })
 
