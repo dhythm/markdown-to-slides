@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label"
 import { SlideTheme } from "@/types/theme"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { handleProFeature, checkSubscription, showUpgradePrompt } from "@/lib/subscription-utils"
 
 interface AIToolbarProps {
   onMarkdownGenerated: (markdown: string) => void
@@ -105,135 +106,118 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
     )
   }
 
+  // Unified function to handle pro feature actions
+  const handleProAction = async (action: () => Promise<void>) => {
+    const hasSubscription = await checkSubscription()
+    if (!hasSubscription) {
+      showUpgradePrompt()
+      return
+    }
+    await action()
+  }
+
   async function generateMarkdown() {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/ai/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt, topic }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to generate markdown")
-      }
-
-      const data = await response.json()
-      onMarkdownGenerated(data.markdown)
-    } catch (error) {
-      console.error("Error generating markdown:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function enhanceSlides() {
-    if (!currentContent.trim()) {
-      return
-    }
-
-    setEnhanceLoading(true)
-    try {
-      const response = await fetch("/api/ai/enhance", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ markdown: currentContent }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to enhance slides")
-      }
-
-      const data = await response.json()
-      onMarkdownGenerated(data.markdown)
-    } catch (error) {
-      console.error("Error enhancing slides:", error)
-    } finally {
-      setEnhanceLoading(false)
-    }
-  }
-
-  async function translateSlides() {
-    if (!currentContent.trim() || !selectedLanguage) {
-      return
-    }
-
-    setTranslateLoading(true)
-    try {
-      const response = await fetch("/api/ai/translate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          markdown: currentContent,
-          targetLanguage: selectedLanguage,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to translate slides")
-      }
-
-      const data = await response.json()
-      onMarkdownGenerated(data.markdown)
-    } catch (error) {
-      console.error("Error translating slides:", error)
-    } finally {
-      setTranslateLoading(false)
-    }
-  }
-
-  function handleThemeChange(theme: SlideTheme) {
-    if (onThemeChange) {
-      onThemeChange(theme)
-      setThemeDialogOpen(false)
-    }
-  }
-
-  const handlePaidFeature = async (action: () => Promise<void>) => {
-    try {
-      await action()
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("subscription")) {
-        toast.error("This is a Pro feature. Please upgrade to use it.", {
-          action: {
-            label: "Upgrade",
-            onClick: () => router.push("/billing"),
+    if (!prompt || !topic) return
+    await handleProAction(async () => {
+      setLoading(true)
+      try {
+        const response = await fetch("/api/ai/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          description: "Use code Launch2025 for 49% lifetime discount!"
+          body: JSON.stringify({ prompt, topic }),
         })
-      } else {
-        toast.error("Something went wrong. Please try again.")
-      }
-    }
-  }
 
-  const showUpgradePrompt = () => {
-    toast.error("This is a Pro feature. Please upgrade to use it.", {
-      action: {
-        label: "Upgrade",
-        onClick: () => router.push("/billing"),
-      },
-      description: "Use code Launch2025 for 49% lifetime discount!"
+        if (!response.ok) {
+          throw new Error("Failed to generate markdown")
+        }
+
+        const data = await response.json()
+        onMarkdownGenerated(data.markdown)
+        setGenerateDialogOpen(false)
+      } catch (error) {
+        console.error("Error generating markdown:", error)
+        toast.error("Failed to generate markdown")
+      } finally {
+        setLoading(false)
+      }
     })
   }
 
-  const checkSubscription = async () => {
-    try {
-      const response = await fetch("/api/billing/check-subscription")
-      const data = await response.json()
-      return data.isSubscribed
-    } catch (error) {
-      console.error("Error checking subscription:", error)
-      return false
-    }
+  async function enhanceSlides() {
+    if (!currentContent.trim()) return
+    await handleProAction(async () => {
+      setEnhanceLoading(true)
+      try {
+        const response = await fetch("/api/ai/enhance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            markdown: currentContent,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to enhance slides")
+        }
+
+        const data = await response.json()
+        onMarkdownGenerated(data.markdown)
+        setEnhanceDialogOpen(false)
+      } catch (error) {
+        console.error("Error enhancing slides:", error)
+        toast.error("Failed to enhance slides")
+      } finally {
+        setEnhanceLoading(false)
+      }
+    })
   }
 
+  async function translateSlides() {
+    if (!currentContent.trim() || !selectedLanguage) return
+    await handleProAction(async () => {
+      setTranslateLoading(true)
+      try {
+        const response = await fetch("/api/ai/translate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            markdown: currentContent,
+            targetLanguage: selectedLanguage,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to translate slides")
+        }
+
+        const data = await response.json()
+        onMarkdownGenerated(data.markdown)
+        setTranslateDialogOpen(false)
+      } catch (error) {
+        console.error("Error translating slides:", error)
+        toast.error("Failed to translate slides")
+      } finally {
+        setTranslateLoading(false)
+      }
+    })
+  }
+
+  async function applyTheme(theme: SlideTheme) {
+    await handleProAction(async () => {
+      if (onThemeChange) {
+        onThemeChange(theme)
+        setThemeDialogOpen(false)
+      }
+    })
+  }
+
+  // Handle opening dialogs for pro features
   const handleFeatureClick = async (feature: string, setDialogOpen: (open: boolean) => void) => {
     const hasSubscription = await checkSubscription()
     if (!hasSubscription) {
@@ -310,7 +294,7 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
           </div>
           <DialogFooter>
             <Button
-              onClick={() => handlePaidFeature(generateMarkdown)}
+              onClick={generateMarkdown}
               disabled={loading || !prompt || !topic}
             >
               {loading ? "Generating..." : "Generate"}
@@ -340,7 +324,7 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
           </div>
           <DialogFooter>
             <Button
-              onClick={() => handlePaidFeature(enhanceSlides)}
+              onClick={enhanceSlides}
               disabled={enhanceLoading || !currentContent.trim()}
             >
               {enhanceLoading ? "Enhancing..." : "Enhance"}
@@ -388,7 +372,7 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
           </div>
           <DialogFooter>
             <Button
-              onClick={() => handlePaidFeature(translateSlides)}
+              onClick={translateSlides}
               disabled={translateLoading || !currentContent.trim() || !selectedLanguage}
             >
               {translateLoading ? "Translating..." : "Translate"}
@@ -458,7 +442,7 @@ export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => handleThemeChange(customTheme)}>
+            <Button onClick={() => applyTheme(customTheme)}>
               Apply Theme
             </Button>
           </DialogFooter>
