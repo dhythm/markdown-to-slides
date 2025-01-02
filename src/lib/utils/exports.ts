@@ -403,7 +403,6 @@ export async function exportToPPTX(slides: string[], theme?: SlideTheme, buttonR
       }
 
       // Convert markdown to HTML first to get proper formatting
-      const container = document.createElement('div')
       const html = renderToStaticMarkup(
         createElement(ReactMarkdown, {
           remarkPlugins: [remarkGfm, remarkMath],

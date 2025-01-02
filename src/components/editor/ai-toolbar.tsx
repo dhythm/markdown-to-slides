@@ -22,9 +22,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SlideTheme } from "@/types/theme"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { handleProFeature, checkSubscription, showUpgradePrompt } from "@/lib/subscription-utils"
+import { checkSubscription, showUpgradePrompt } from "@/lib/subscription-utils"
 
 interface AIToolbarProps {
   onMarkdownGenerated: (markdown: string) => void
@@ -45,7 +44,6 @@ const LANGUAGES = [
 
 export function AIToolbar({ onMarkdownGenerated, currentContent, onThemeChange }: AIToolbarProps) {
   const { data: session } = useSession()
-  const router = useRouter()
   const [prompt, setPrompt] = useState("")
   const [topic, setTopic] = useState("")
   const [loading, setLoading] = useState(false)
