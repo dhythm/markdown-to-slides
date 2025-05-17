@@ -1,93 +1,93 @@
-export const exampleSlides = `# Welcome to Markdown Slides! 🚀
-## A Quick Guide to Markdown Formatting
+export const exampleSlides = `# Markdownスライドへようこそ！ 🚀
+## Markdown書式のクイックガイド
 
 ---
 
-# Basic Text Formatting
+# 基本的なテキスト装飾
 
-## Make Your Text Stand Out
-- Use **double asterisks** for **bold text**
-- Use *single asterisks* for *italic text*
-- Use backticks for \`inline code\`
+## 文字を強調する
+- **ダブルアスタリスク**で**太字**
+- *シングルアスタリスク*で*斜体*
+- バッククォートで\`インラインコード\`
 ---
-- Use > for blockquotes
-- Use --- for slide breaks
+- > で引用文
+- --- でスライド区切り
 
-> This is a blockquote. Great for highlighting important points!
-
----
-
-# Lists and Structure
-
-## Ordered and Unordered Lists
-1. First ordered item
-2. Second ordered item
-3. Third ordered item
----
-- Unordered list uses hyphens
-- Another bullet point
-  - Indent with two spaces
-  - For nested lists
-
-## Task Lists
-- [x] Completed task
-- [ ] Pending task
+> これは引用文です。重要なポイントを強調するのに便利！
 
 ---
 
-# Code Blocks and Tables
+# リストと構造
+
+## 番号付き・箇条書きリスト
+1. 最初の項目
+2. 2番目の項目
+3. 3番目の項目
 ---
-## Code Example
+- 箇条書きはハイフンで
+- 追加の項目
+  - 2つスペースでインデント
+  - ネストしたリストもOK
+
+## タスクリスト
+- [x] 完了したタスク
+- [ ] 未完了のタスク
+
+---
+
+# コードブロックと表
+---
+## コード例
 \`\`\`javascript
-// Use three backticks for code blocks
+// 3つのバッククォートでコードブロック
 function greet(name) {
-  return \`Hello, \${name}!\`;
+  return \`こんにちは、\${name}さん！\`;
 }
 \`\`\`
 ---
-## Table Example
-| Element | Markdown Syntax |
-|---------|----------------|
-| Bold | \`**text**\` |
-| Italic | \`*text*\` |
-| Code | \`\`\`code\`\`\` |
+## 表の例
+| 要素 | Markdown記法 |
+|------|--------------|
+| 太字 | \`**テキスト**\` |
+| 斜体 | \`*テキスト*\` |
+| コード | \`\`\`コード\`\`\` |
 
 ---
 
-# Links and Images
+# リンクと画像
 
 ---
 
-## Adding Links
-- [Click here](https://example.com) - \`[text](url)\`
-- <https://example.com> - \`<url>\`
+## リンクを追加
+- [こちらをクリック](https://example.com) - \`[テキスト](URL)\`
+- <https://example.com> - \`<URL>\`
 ---
-## Adding Images
-![Image Example](https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=600&h=400&fit=crop)
-\`![alt text](image-url)\`
-
----
-
-# Mathematical Expressions
+## 画像を追加
+![画像例](https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=600&h=400&fit=crop)
+\`![代替テキスト](画像URL)\`
 
 ---
 
-# Inline Math
-Here are some examples of inline math expressions:
+# 数式表現
 
-- Einstein's famous equation: $E = mc^2$
-- The quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
-- Euler's identity: $e^{i\\pi} + 1 = 0$
-- Pythagorean theorem: $a^2 + b^2 = c^2$
 ---
-# Block Math
-Here are some examples of block math expressions:
+
+# インライン数式
+以下はインライン数式の例です：
+
+- アインシュタインの有名な式: $E = mc^2$
+- 二次方程式の解の公式: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
+- オイラーの等式: $e^{i\\pi} + 1 = 0$
+- ピタゴラスの定理: $a^2 + b^2 = c^2$
+---
+# ブロック数式
+以下はブロック数式の例です：
 
 $$
 \\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
 $$
 ---
-## Maxwell's Equations
+## マクスウェル方程式
 $$
 \\begin{aligned}
 \\nabla \\times \\vec{\\mathbf{B}} &= \\frac{4\\pi}{c}\\vec{\\mathbf{j}} + \\frac{1}{c}\\frac{\\partial\\vec{\\mathbf{E}}}{\\partial t} \\\\
@@ -97,7 +97,7 @@ $$
 \\end{aligned}
 $$
 ---
-## More Examples
+## その他の例
 $$
 \\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}
 $$
@@ -119,29 +119,29 @@ $$
 
 ---
 
-# Tips for Great Slides
+# スライド作成のコツ
 
-## Best Practices
-1. Keep content concise
-2. Use visual hierarchy
-3. Include examples
-4. Add relevant images
-5. Use consistent styling
+## ベストプラクティス
+1. 内容は簡潔に
+2. 視覚的な階層を意識
+3. 例を入れる
+4. 関連画像を追加
+5. スタイルを統一
 ---
-## Remember
-- One main idea per slide
-- Use headings for structure
-- Include engaging visuals
-- Test your formatting
+## 覚えておこう
+- 1スライド1メッセージ
+- 見出しで構造化
+- 視覚的に魅力的に
+- 書式をテストしよう
 
 ---
 
-# Ready to Create?
+# さあ、作ってみよう！
 
-## Start Making Your Slides!
-1. Write in markdown
-2. Preview in real-time
-3. Export to PDF/PPTX
-4. Share with others
+## スライド作成の流れ
+1. Markdownで記述
+2. リアルタイムでプレビュー
+3. PDF/PPTXにエクスポート
+4. みんなと共有
 ---
-## Happy Presenting! 🎉` 
+## 楽しいプレゼンを！ 🎉`;
