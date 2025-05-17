@@ -14,6 +14,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
+import { useTheme } from "next-themes";
 
 interface SlidePreviewProps {
 	currentSlide: number;
@@ -34,6 +35,7 @@ export function SlidePreview({
 	onNextSlide,
 	onToggleFullscreen,
 }: SlidePreviewProps) {
+	const { theme: colorMode } = useTheme();
 	const currentSlideContent = slides[currentSlide] || "";
 
 	return (
@@ -65,19 +67,20 @@ export function SlidePreview({
 				<div
 					className={cn(
 						"absolute inset-0 transition-colors duration-200",
-						theme?.styles.background && "bg-[var(--background)]",
+						colorMode === "dark" ? "bg-white" : "bg-black",
+						"flex items-center justify-center",
 					)}
-					style={{
-						backgroundColor: theme?.styles.background,
-						color: theme?.styles.text,
-					}}
 				>
 					<div
 						className={cn(
-							"relative h-full flex items-center justify-center",
-							"mx-auto max-w-4xl p-8",
-							"min-h-[500px]",
+							"mx-auto aspect-[16/9] w-full max-w-4xl",
+							"flex items-center justify-center",
 						)}
+						style={{
+							maxHeight: "70vh",
+							backgroundColor: theme?.styles.background || "white",
+							color: theme?.styles.text,
+						}}
 					>
 						<div
 							className="w-full prose prose-sm md:prose-base lg:prose-lg max-w-none text-center transition-all duration-200"
