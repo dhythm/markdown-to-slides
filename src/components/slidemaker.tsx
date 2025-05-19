@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { exampleSlides } from "@/lib/constants/example-slides";
 import { exportToPDF, exportToPPTX } from "@/lib/utils/exports";
 import type { SlideTheme } from "@/types/theme";
-import { Download, Github, Heart, Moon, Presentation, Sun } from "lucide-react";
+import { Download, Moon, Presentation, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -88,15 +88,15 @@ export function SlideMaker() {
 						PPTX
 					</Button>
 				</div>
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[600px]">
-					<div className="h-full">
+				<div className="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-[600px]">
+					<div className="h-full md:col-span-2">
 						<MarkdownEditor
 							value={markdown}
 							onChange={handleMarkdownChange}
 							onThemeChange={handleThemeChange}
 						/>
 					</div>
-					<div className="h-full flex flex-col">
+					<div className="h-full md:col-span-3">
 						<SlidePreview
 							currentSlide={currentSlide}
 							slides={slides}
