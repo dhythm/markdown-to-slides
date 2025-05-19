@@ -11,6 +11,7 @@ import type { SlideTheme } from "@/types/theme";
 import "katex/dist/katex.min.css";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -37,6 +38,28 @@ export function SlidePreview({
 }: SlidePreviewProps) {
 	const { theme: colorMode } = useTheme();
 	const currentSlideContent = slides[currentSlide] || "";
+	const contentRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const adjustContentScale = () => {
+			const container = contentRef.current?.parentElement;
+			const content = contentRef.current;
+			if (!container || !content) return;
+
+			const containerRect = container.getBoundingClientRect();
+			const contentRect = content.getBoundingClientRect();
+
+			const scaleX = containerRect.width / contentRect.width;
+			const scaleY = containerRect.height / contentRect.height;
+			const scale = Math.min(1, scaleX, scaleY);
+
+			content.style.setProperty("--content-scale", scale.toString());
+		};
+
+		adjustContentScale();
+		window.addEventListener("resize", adjustContentScale);
+		return () => window.removeEventListener("resize", adjustContentScale);
+	}, [currentSlideContent]);
 
 	return (
 		<Card
@@ -84,6 +107,7 @@ export function SlidePreview({
 						}}
 					>
 						<div
+							ref={contentRef}
 							className="w-full prose prose-sm md:prose-base lg:prose-lg max-w-none text-center transition-all duration-200"
 							style={{
 								"--tw-prose-headings": theme?.styles.heading,
