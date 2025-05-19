@@ -8,13 +8,13 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { SlideTheme } from "@/types/theme";
+import "katex/dist/katex.min.css";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { useTheme } from "next-themes";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import "katex/dist/katex.min.css";
-import { useTheme } from "next-themes";
 
 interface SlidePreviewProps {
 	currentSlide: number;
@@ -75,6 +75,7 @@ export function SlidePreview({
 						className={cn(
 							"mx-auto aspect-[16/9] w-full max-w-4xl",
 							"flex items-center justify-center",
+							"overflow-hidden"
 						)}
 						style={{
 							maxHeight: "70vh",
@@ -84,17 +85,17 @@ export function SlidePreview({
 					>
 						<div
 							className="w-full prose prose-sm md:prose-base lg:prose-lg max-w-none text-center transition-all duration-200"
-							style={
-								{
-									"--tw-prose-headings": theme?.styles.heading,
-									"--tw-prose-body": theme?.styles.text,
-									"--tw-prose-code": theme?.styles.code,
-									"--tw-prose-links": theme?.styles.link,
-									"--tw-prose-quotes": theme?.styles.blockquote,
-									"--tw-prose-quote-borders": theme?.styles.accent,
-									fontFamily: theme?.fonts.body,
-								} as React.CSSProperties
-							}
+							style={{
+								"--tw-prose-headings": theme?.styles.heading,
+								"--tw-prose-body": theme?.styles.text,
+								"--tw-prose-code": theme?.styles.code,
+								"--tw-prose-links": theme?.styles.link,
+								"--tw-prose-quotes": theme?.styles.blockquote,
+								"--tw-prose-quote-borders": theme?.styles.accent,
+								fontFamily: theme?.fonts.body,
+								transform: "scale(var(--content-scale, 1))",
+								transformOrigin: "center center",
+							} as React.CSSProperties}
 						>
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm, remarkMath]}
