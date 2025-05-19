@@ -155,6 +155,21 @@ export function SlidePreview({
 												</code>
 											</pre>
 										),
+									ul: ({ children }) => (
+										<ul className="flex flex-col items-center pl-0 list-inside">
+											{children}
+										</ul>
+									),
+									ol: ({ children }) => (
+										<ol className="flex flex-col items-center pl-0 list-inside">
+											{children}
+										</ol>
+									),
+									li: ({ children }) => (
+										<li className="text-center w-full">
+											{children}
+										</li>
+									),
 								}}
 							>
 								{currentSlideContent}
